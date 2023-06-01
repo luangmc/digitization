@@ -148,30 +148,6 @@ def ph_smearing2D(x_hit, y_hit, z_hit, energyDep_hit, options):
          options.diff_coeff_T*(np.abs(z_hit-options.z_gem))/10.), size=int(nph)))
     return X, Y
 
-# Nph_saturation() is not needed anymore: now we use Nph_saturation_vectorized()
-#
-# def Nph_saturation(histo_cloud,options,xmin_vox,xmax_vox,ymin_vox,ymax_vox,zmin_vox,zmax_vox):
-#    Nph_array = np.zeros((histo_cloud.GetNbinsX(),histo_cloud.GetNbinsY()))
-#    Nph_tot = 0
-#    for i in range(xmin_vox, xmax_vox):
-#        for j in range(ymin_vox,ymax_vox):
-#            hout = 0
-#            for k in range(zmin_vox,zmax_vox):
-#                hin = histo_cloud.GetBinContent(i,j,k)
-#                nel_in = hin
-#                hout += (nel_in * options.A * GEM3_gain)/(1 + options.beta * GEM3_gain  * nel_in)
-#
-#
-#            nmean_ph= hout * omega * options.photons_per_el * options.counts_per_photon     # mean total number of photons
-#            photons=poisson(nmean_ph)                    # poisson distribution for photons
-#            n_ph=photons.rvs()
-#            Nph_array[i-1][j-1] = n_ph
-#            Nph_tot += Nph_array[i-1][j-1]
-#            #if hout>0:
-#            #    print("number final electrons per voxel: %f"%hout)
-#
-#    return Nph_tot, Nph_array
-
 
 def Nph_saturation_vectorized(histo_cloud, edges, options):
     Nph_array = np.zeros((histo_cloud.shape[0], histo_cloud.shape[1]))
@@ -203,12 +179,6 @@ def Nph_saturation_vectorized(histo_cloud, edges, options):
         np.rint(edges[2][nonzero_bins[2]]/10/drift_vel).astype(int)
     n_fotons = np.rint(ph_pmt[nonzero_bins]).astype(int)
 
-    # Input parameters:
-    #x0 = np.array([50, 100, 150])
-    #z0 = np.array([50, 100, 150])
-    #n_fotons = np.array([300, 300, 300])
-    #arr_times = np.array([0, 15, 50])
-
     print("n_fotons mean =", n_fotons.mean())
     print("n_cluster =", n_fotons.size)
 
@@ -218,37 +188,37 @@ def Nph_saturation_vectorized(histo_cloud, edges, options):
     ptc_simulation = SignalSimulation(pmt_hits)
     pmts_signal = ptc_simulation.simulated_signals()
 
-    plt.figure(figsize=(20, 10))
+    #plt.figure(figsize=(20, 10))
 
-    plt.subplot(221)
-    plt.plot(pmts_signal['time'], pmts_signal['pmt1'], 'k')
-    plt.grid()
-    plt.ylabel("Amplitude")
-    plt.xlabel("Time")
-    plt.title('PMT 1')
-
-    plt.subplot(222)
-    plt.plot(pmts_signal['time'], pmts_signal['pmt2'], 'k')
-    plt.grid()
-    plt.ylabel("Amplitude")
-    plt.xlabel("Time")
-    plt.title('PMT 2')
-
-    plt.subplot(223)
-    plt.plot(pmts_signal['time'], pmts_signal['pmt3'], 'k')
-    plt.grid()
-    plt.ylabel("Amplitude")
-    plt.xlabel("Time")
-    plt.title('PMT 3')
-
-    plt.subplot(224)
-    plt.plot(pmts_signal['time'], pmts_signal['pmt4'], 'k')
-    plt.grid()
-    plt.ylabel("Amplitude")
-    plt.xlabel("Time")
-    plt.title('PMT 4')
-    plt.savefig('pmt_sim.png')
-
+    #plt.subplot(221)
+    #plt.plot(pmts_signal['time'], pmts_signal['pmt1'], 'k')
+    #plt.grid()
+    #plt.ylabel("Amplitude")
+    #plt.xlabel("Time")
+    #plt.title('PMT 1')
+#
+#    plt.subplot(222)
+#    plt.plot(pmts_signal['time'], pmts_signal['pmt2'], 'k')
+#    plt.grid()
+#    plt.ylabel("Amplitude")
+#    plt.xlabel("Time")
+#    plt.title('PMT 2')
+#
+#    plt.subplot(223)
+#    plt.plot(pmts_signal['time'], pmts_signal['pmt3'], 'k')
+#    plt.grid()
+#    plt.ylabel("Amplitude")
+#    plt.xlabel("Time")
+#    plt.title('PMT 3')
+#
+#    plt.subplot(224)
+#    plt.plot(pmts_signal['time'], pmts_signal['pmt4'], 'k')
+#    plt.grid()
+#    plt.ylabel("Amplitude")
+#    plt.xlabel("Time")
+#    plt.title('PMT 4')
+#    plt.savefig('pmt_sim.png')
+#
     Nph_tot = np.sum(n_ph)
 
     return Nph_tot, Nph_array
@@ -461,8 +431,8 @@ if __name__ == "__main__":
             for entry in range(0, totev):  # RUNNING ON ENTRIES
                 tree.GetEntry(entry)
 
-                y_hits_tr = np.array(tree.y_hits)
-                z_hits_tr = np.array(tree.z_hits)
+                y_hits_tr = np.array(tree.y_hits)+100
+                z_hits_tr = np.array(tree.z_hits)+100
 
                 # add random Z to tracks
                 x_hits_tr = tree.x_hits
@@ -516,21 +486,6 @@ if __name__ == "__main__":
 
                 # with saturation
                 if (opt.saturation):
-
-                    # non-vectorized smearing
-                    # S3D_x=np.array([])
-                    # S3D_y=np.array([])
-                    # S3D_z=np.array([])
-                    # for ihit in range(0,tree.numhits):
-                    #    #print("Processing hit %d of %d"%(ihit,tree.numhits))
-                    #    ## here swapping X with Z beacuse in geant the drift axis is X
-                    #    if (opt.NR == True):
-                    #        S3D = cloud_smearing3D(x_hits_tr[ihit],y_hits_tr[ihit],z_hits_tr[ihit],tree.energyDep_hits[ihit],opt)
-                    #    else:
-                    #        S3D = cloud_smearing3D(z_hits_tr[ihit],y_hits_tr[ihit],x_hits_tr[ihit],tree.energyDep_hits[ihit],opt)
-                    #    S3D_x=np.append(S3D_x, S3D[0])
-                    #    S3D_y=np.append(S3D_y, S3D[1])
-                    #    S3D_z=np.append(S3D_z, S3D[2])
 
                     # vectorized smearing
                     # if ER file need to swapp X with Z beacuse in geant the drift axis is X
@@ -648,9 +603,9 @@ if __name__ == "__main__":
                 final_image = rn.array2hist(total, final_image)
                 if opt.print_png == True:
                     # print cmos image
-                    array_normalized = total / np.max(total)
+                    array_normalized = total.T / np.max(total)
                     plt.axis('off')
-                    plt.imshow(array_normalized, cmap='gray')
+                    plt.imshow(array_normalized, cmap='gray', origin='lower')  # Set origin parameter to 'lower'
                     plt.savefig('array_image.png', dpi=300,
                                 bbox_inches='tight', pad_inches=0)
                     # and print pmt waveforms

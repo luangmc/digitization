@@ -90,7 +90,7 @@ class SignalSimulation:
             signal_aux = np.array([])
             for i in range(len(cluster_keys)):
                 if i % 100 == 0:
-                    print("PMT", pmt, " Signal generation for voxel n. ", i)
+                    print(pmt, " signal generation for voxel n. ", i)
                 arr_time = arrival_time[i]
                 nr_fotons = self.ptc_hits[cluster_keys[i]][pmt]
                 sig = self.pmt_signal(nr_fotons, arr_time)
