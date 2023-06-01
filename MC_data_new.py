@@ -6,11 +6,20 @@ import optparse
 import time
 import sys
 import numpy as np
+import matplotlib.pyplot as plt
 import root_numpy as rn
 import random
 from scipy.stats import expon
 from scipy.stats import poisson
 import math
+
+import numpy as np
+import matplotlib.pyplot as plt
+from pmt_hits import PhotonPropagation
+from simulation import SignalSimulation
+
+import compute_drift_velocity.compute_drift_velocity
+
 
 #sys.path.append("../reconstruction")
 import swiftlib as sw
@@ -139,17 +148,76 @@ def ph_smearing2D(x_hit,y_hit,z_hit,energyDep_hit,options):
 
 
     
-def Nph_saturation_vectorized(histo_cloud,options):
+def Nph_saturation_vectorized(histo_cloud,edges,options):
     Nph_array = np.zeros((histo_cloud.shape[0],histo_cloud.shape[1]))
     Nph_tot = 0
 
     nel_in=histo_cloud
     hin=(nel_in  * options.A * GEM3_gain)/(1 + options.beta * GEM3_gain  * nel_in) 
+    ph_pmt=hin*options.photons_per_el
     hout=np.sum(hin,axis=(2))
     nmean_ph= hout * omega * options.photons_per_el * options.counts_per_photon     # mean total number of photons
     poisson_distr = lambda x: poisson(x).rvs()
     n_ph=poisson_distr(nmean_ph) 
     Nph_array=n_ph
+
+    # PMT SIMULATION 
+
+    nonzero_bins = np.nonzero(ph_pmt)
+
+    drift_vel=compute_drift_velocity.compute_drift_velocity.compute_drift_velocity(1) # value of E in kV/cm, value of drift_vel in cm/microsec
+    
+    x0 = np.rint(edges[0][nonzero_bins[0]]+346/2).astype(int)
+    y0 = np.rint(edges[1][nonzero_bins[1]]+346/2).astype(int)
+    arr_times = 1000*np.rint(edges[2][nonzero_bins[2]]/10/drift_vel).astype(int)   # time in nanoseconds
+    n_fotons = np.rint(ph_pmt[nonzero_bins]).astype(int)
+    
+    # Input parameters:
+    #x0 = np.array([50, 100, 150])
+    #z0 = np.array([50, 100, 150])
+    #n_fotons = np.array([300, 300, 300])
+    #arr_times = np.array([0, 15, 50])
+
+    print("n_fotons mean =", n_fotons.mean())
+    print("n_cluster =", n_fotons.size)
+
+    ptc_object = PhotonPropagation(x0, y0, n_fotons, arr_times)
+    pmt_hits = ptc_object.pmt_hits()
+
+    ptc_simulation = SignalSimulation(pmt_hits)
+    pmts_signal = ptc_simulation.simulated_signals()
+
+    plt.figure(figsize=(20,10))
+
+    plt.subplot(221)
+    plt.plot(pmts_signal['time'], pmts_signal['pmt1'],'k')
+    plt.grid()
+    plt.ylabel("Amplitude")
+    plt.xlabel("Time")
+    plt.title('PMT 1')
+
+    plt.subplot(222)
+    plt.plot(pmts_signal['time'], pmts_signal['pmt2'],'k')
+    plt.grid()
+    plt.ylabel("Amplitude")
+    plt.xlabel("Time")
+    plt.title('PMT 2')
+
+    plt.subplot(223)
+    plt.plot(pmts_signal['time'], pmts_signal['pmt3'],'k')
+    plt.grid()
+    plt.ylabel("Amplitude")
+    plt.xlabel("Time")
+    plt.title('PMT 3')
+
+    plt.subplot(224)
+    plt.plot(pmts_signal['time'], pmts_signal['pmt4'],'k')
+    plt.grid()
+    plt.ylabel("Amplitude")
+    plt.xlabel("Time")
+    plt.title('PMT 4')
+    plt.savefig('pmt_sim.png')
+
     Nph_tot=np.sum(n_ph)
             
     return Nph_tot, Nph_array
@@ -351,6 +419,8 @@ if __name__ == "__main__":
                 for entry in range(0, totev): #RUNNING ON ENTRIES
                     tree.GetEntry(entry)
 
+                    y_hits_tr = np.array(tree.y_hits)
+                    z_hits_tr = np.array(tree.z_hits)
 
                     # add random Z to tracks
                     x_hits_tr = tree.x_hits
@@ -363,21 +433,21 @@ if __name__ == "__main__":
                     eventnumber[0] = tree.eventnumber
                     #FIXME
                     if (opt.NR==True): 
-                        proj_track_2D[0]=np.sum(np.sqrt(np.power(np.ediff1d(np.array(tree.x_hits)),2)+np.power(np.ediff1d(np.array(tree.y_hits)),2)))
+                        proj_track_2D[0]=np.sum(np.sqrt(np.power(np.ediff1d(np.array(tree.x_hits)),2)+np.power(np.ediff1d(np.array(y_hits_tr)),2)))
                         energy_ini[0] = tree.ekin_particle
                         particle_type[0] = tree.particle_type
                     else: 
-                        proj_track_2D[0]=np.sum(np.sqrt(np.power(np.ediff1d(np.array(tree.z_hits)),2)+np.power(np.ediff1d(np.array(tree.y_hits)),2)))
+                        proj_track_2D[0]=np.sum(np.sqrt(np.power(np.ediff1d(np.array(z_hits_tr)),2)+np.power(np.ediff1d(np.array(y_hits_tr)),2)))
                         energy_ini[0] = tree.ekin_particle[0]*1000
                         particle_type[0] = 0
                     phi_ini[0] = -999.
                     theta_ini[0] = -999.
-                    phi_ini[0] = np.arctan2( (tree.y_hits[1]-tree.y_hits[0]),(tree.z_hits[1]-tree.z_hits[0]) )
-                    theta_ini[0] = np.arccos( (tree.x_hits[1]-tree.x_hits[0]) / np.sqrt( np.power((tree.x_hits[1]-tree.x_hits[0]),2) + np.power((tree.y_hits[1]-tree.y_hits[0]),2) + np.power((tree.z_hits[1]-tree.z_hits[0]),2)) )
+                    phi_ini[0] = np.arctan2( (y_hits_tr[1]-y_hits_tr[0]),(z_hits_tr[1]-z_hits_tr[0]) )
+                    theta_ini[0] = np.arccos( (tree.x_hits[1]-tree.x_hits[0]) / np.sqrt( np.power((tree.x_hits[1]-tree.x_hits[0]),2) + np.power((y_hits_tr[1]-y_hits_tr[0]),2) + np.power((z_hits_tr[1]-z_hits_tr[0]),2)) )
                     track_length_3D[0]=np.sum(np.array(tree.tracklen_hits))
                     xhits_og = np.array(x_hits_tr)
-                    yhits_og = np.array(tree.y_hits)
-                    zhits_og = np.array(tree.z_hits)
+                    yhits_og = np.array(y_hits_tr)
+                    zhits_og = np.array(z_hits_tr)
                     EDepHit_og = np.array(tree.energyDep_hits)
                     px[0]= np.array(tree.px_particle)[0]
                     py[0]= np.array(tree.py_particle)[0]
@@ -409,9 +479,9 @@ if __name__ == "__main__":
                         #    #print("Processing hit %d of %d"%(ihit,tree.numhits))
                         #    ## here swapping X with Z beacuse in geant the drift axis is X
                         #    if (opt.NR == True):
-                        #        S3D = cloud_smearing3D(x_hits_tr[ihit],tree.y_hits[ihit],tree.z_hits[ihit],tree.energyDep_hits[ihit],opt)
+                        #        S3D = cloud_smearing3D(x_hits_tr[ihit],y_hits_tr[ihit],z_hits_tr[ihit],tree.energyDep_hits[ihit],opt)
                         #    else:
-                        #        S3D = cloud_smearing3D(tree.z_hits[ihit],tree.y_hits[ihit],x_hits_tr[ihit],tree.energyDep_hits[ihit],opt)
+                        #        S3D = cloud_smearing3D(z_hits_tr[ihit],y_hits_tr[ihit],x_hits_tr[ihit],tree.energyDep_hits[ihit],opt)
                         #    S3D_x=np.append(S3D_x, S3D[0])
                         #    S3D_y=np.append(S3D_y, S3D[1])
                         #    S3D_z=np.append(S3D_z, S3D[2])
@@ -419,9 +489,9 @@ if __name__ == "__main__":
                         # vectorized smearing
                         # if ER file need to swapp X with Z beacuse in geant the drift axis is X
                         if (opt.NR == True):
-                            S3D_x, S3D_y, S3D_z = cloud_smearing3D_vectorized(np.array(x_hits_tr),np.array(tree.y_hits),np.array(tree.z_hits),np.array(tree.energyDep_hits),opt)
+                            S3D_x, S3D_y, S3D_z = cloud_smearing3D_vectorized(np.array(x_hits_tr),np.array(y_hits_tr),np.array(z_hits_tr),np.array(tree.energyDep_hits),opt)
                         else:
-                            S3D_x, S3D_y, S3D_z = cloud_smearing3D_vectorized(np.array(tree.z_hits),np.array(tree.y_hits),np.array(x_hits_tr),np.array(tree.energyDep_hits),opt)
+                            S3D_x, S3D_y, S3D_z = cloud_smearing3D_vectorized(np.array(z_hits_tr),np.array(y_hits_tr),np.array(x_hits_tr),np.array(tree.energyDep_hits),opt)
 
 
                         # if there are no electrons on GEM3, just use empty image 
@@ -460,7 +530,7 @@ if __name__ == "__main__":
                                     normed=None, weights=None, density=None)
 
                             # apply saturation vectorized function
-                            result_GEM3 = Nph_saturation_vectorized(histo_cloud,opt)   
+                            result_GEM3 = Nph_saturation_vectorized(histo_cloud, edge, opt)   
                             array2d_Nph = result_GEM3[1]
                             tot_ph_G3 = np.sum(array2d_Nph)
 
@@ -506,9 +576,9 @@ if __name__ == "__main__":
                         for ihit in range(0,tree.numhits):
                             ## here swapping X with Z beacuse in geant the drift axis is X
                             if (opt.NR==True):
-                                S2D = ph_smearing2D(x_hits_tr[ihit],tree.y_hits[ihit],tree.z_hits[ihit],tree.energyDep_hits[ihit],opt)
+                                S2D = ph_smearing2D(x_hits_tr[ihit],y_hits_tr[ihit],z_hits_tr[ihit],tree.energyDep_hits[ihit],opt)
                             else:
-                                S2D = ph_smearing2D(tree.z_hits[ihit],tree.y_hits[ihit],x_hits_tr[ihit],tree.energyDep_hits[ihit],opt)
+                                S2D = ph_smearing2D(z_hits_tr[ihit],y_hits_tr[ihit],x_hits_tr[ihit],tree.energyDep_hits[ihit],opt)
                             
                             for t in range(0, len(S2D[0])):
                                 tot_ph_G3+=1
@@ -524,6 +594,13 @@ if __name__ == "__main__":
 
                     final_image=rt.TH2I('pic_run'+str(run_count)+'_ev'+str(entry), '', opt.x_pix, 0, opt.x_pix-1, opt.y_pix, 0, opt.y_pix-1) #smeared track with background
                     final_image=rn.array2hist(total, final_image)
+                    if opt.print_png==True: 
+                        # print cmos image
+                        array_normalized = total / np.max(total)
+                        plt.axis('off')
+                        plt.imshow(array_normalized, cmap='gray')
+                        plt.savefig('array_image.png', dpi=300, bbox_inches='tight', pad_inches=0)
+                        ## and print pmt waveforms
 
                     outfile.cd()
                     final_image.Write()            
