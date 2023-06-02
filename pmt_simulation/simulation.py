@@ -13,7 +13,7 @@ class SignalSimulation:
         self.win_noise()
 
     def read_params(self):
-        with open('simulation_params.json', 'r') as file:
+        with open('pmt_simulation/simulation_params.json', 'r') as file:
             params = json.load(file)
         return params
 
@@ -89,7 +89,7 @@ class SignalSimulation:
         for pmt in pmts:
             signal_aux = np.array([])
             for i in range(len(cluster_keys)):
-                if i % 100 == 0:
+                if i % 500 == 0:
                     print(pmt, " signal generation for voxel n. ", i)
                 arr_time = arrival_time[i]
                 nr_fotons = self.ptc_hits[cluster_keys[i]][pmt]

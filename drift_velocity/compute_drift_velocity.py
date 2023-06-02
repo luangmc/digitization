@@ -2,8 +2,8 @@ import csv
 
 # the electric field is in kV/cm
 # the drift velocity is in cm/microseconds
-def compute_drift_velocity(electric_field):
-    with open('compute_drift_velocity/drift_velocity_datasets/drift_velocity_HeCF4_60_40.csv', 'r') as file:
+def compute_drift_velocity(electric_field, gas_mixture="HeCF4_60_40"):
+    with open('drift_velocity/drift_velocity_datasets/'+gas_mixture+'.csv', 'r') as file:
         reader = csv.reader(file)
         header = next(reader)  # Skip the header
         data = list(reader)

@@ -5,6 +5,8 @@
 'diff_const_sigma0L'    : 0.0676,    # diffusion constant [mm]^2
 'diff_coeff_L'          : 0.00978,   # diffusion parameter [mm/sqrt(cm)]^2 for 1 kV
 
+'drift_field'           : 1,         # drift field [kV/cm] 
+
 'x_dim'                 : 346,       # first dimension of the detector
 'y_dim'                 : 346,       # second dimension of the detector
 'x_pix'                 : 2304,      # number of pixels in the first dimension
@@ -45,5 +47,5 @@
 'absorption_l'          : 1400.,     # absorption lenght in [mm]
 
 # debug mode plots
-'print_png'             : True,      # if true both cmos images and pmt waveforms are saved in png format in folder ./png
+'print_png'             : 0,         # if -1 it does nothing, if N, it saves in png both cmos image and pmt waveforms for event n. N 
 }

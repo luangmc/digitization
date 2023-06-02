@@ -11,6 +11,6 @@
 "pmt_signal": {"amplitude": -0.00296,
                "amplitude_dispersion": 0.3,
                "sigma": 0.688},
-"noise_path": "./fe55_noisecovmatrix.npy",
+"noise_path": "pmt_simulation/fe55_noisecovmatrix.npy",
 "noise_old": {"mean": 0,
           "sigma": 0.0005}}

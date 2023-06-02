@@ -7,19 +7,16 @@ import time
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-import root_numpy as rn
+#import root_numpy as rn
 import random
 from scipy.stats import expon
 from scipy.stats import poisson
 import math
 
-import numpy as np
-import matplotlib.pyplot as plt
-from pmt_hits import PhotonPropagation
-from simulation import SignalSimulation
 
-import compute_drift_velocity.compute_drift_velocity
-
+from pmt_simulation.pmt_hits import PhotonPropagation
+from pmt_simulation.simulation import SignalSimulation
+from drift_velocity.compute_drift_velocity import compute_drift_velocity
 
 # sys.path.append("../reconstruction")
 import swiftlib as sw
@@ -165,16 +162,18 @@ def Nph_saturation_vectorized(histo_cloud, edges, options):
     n_ph = poisson_distr(nmean_ph)
     Nph_array = n_ph
 
-    # PMT SIMULATION
+
+    Nph_tot = np.sum(n_ph)
+
+    return Nph_tot, Nph_array, ph_pmt
+
+def simulate_pmt_waveforms(ph_pmt, edges):
 
     nonzero_bins = np.nonzero(ph_pmt)
 
-    drift_vel = compute_drift_velocity.compute_drift_velocity.compute_drift_velocity(
-        1)  # value of E in kV/cm, value of drift_vel in cm/microsec
-
     x0 = np.rint(edges[0][nonzero_bins[0]]+346/2).astype(int)
     y0 = np.rint(edges[1][nonzero_bins[1]]+346/2).astype(int)
-    # time in nanoseconds
+    # time in nanoseconds 
     arr_times = 1000 * \
         np.rint(edges[2][nonzero_bins[2]]/10/drift_vel).astype(int)
     n_fotons = np.rint(ph_pmt[nonzero_bins]).astype(int)
@@ -188,41 +187,50 @@ def Nph_saturation_vectorized(histo_cloud, edges, options):
     ptc_simulation = SignalSimulation(pmt_hits)
     pmts_signal = ptc_simulation.simulated_signals()
 
-    #plt.figure(figsize=(20, 10))
 
-    #plt.subplot(221)
-    #plt.plot(pmts_signal['time'], pmts_signal['pmt1'], 'k')
-    #plt.grid()
-    #plt.ylabel("Amplitude")
-    #plt.xlabel("Time")
-    #plt.title('PMT 1')
-#
-#    plt.subplot(222)
-#    plt.plot(pmts_signal['time'], pmts_signal['pmt2'], 'k')
-#    plt.grid()
-#    plt.ylabel("Amplitude")
-#    plt.xlabel("Time")
-#    plt.title('PMT 2')
-#
-#    plt.subplot(223)
-#    plt.plot(pmts_signal['time'], pmts_signal['pmt3'], 'k')
-#    plt.grid()
-#    plt.ylabel("Amplitude")
-#    plt.xlabel("Time")
-#    plt.title('PMT 3')
-#
-#    plt.subplot(224)
-#    plt.plot(pmts_signal['time'], pmts_signal['pmt4'], 'k')
-#    plt.grid()
-#    plt.ylabel("Amplitude")
-#    plt.xlabel("Time")
-#    plt.title('PMT 4')
-#    plt.savefig('pmt_sim.png')
-#
-    Nph_tot = np.sum(n_ph)
+    return pmts_signal
 
-    return Nph_tot, Nph_array
+def print_waveforms_to_png(pmts_signal):
+    plt.figure(figsize=(20, 10))
+    plt.subplot(221)
+    plt.plot(pmts_signal['time'], pmts_signal['pmt1'], 'k')
+    plt.grid()
+    plt.ylabel("Amplitude")
+    plt.xlabel("Time")
+    plt.title('PMT 1')
+    plt.subplot(222)
+    plt.plot(pmts_signal['time'], pmts_signal['pmt2'], 'k')
+    plt.grid()
+    plt.ylabel("Amplitude")
+    plt.xlabel("Time")
+    plt.title('PMT 2')
+    plt.subplot(223)
+    plt.plot(pmts_signal['time'], pmts_signal['pmt3'], 'k')
+    plt.grid()
+    plt.ylabel("Amplitude")
+    plt.xlabel("Time")
+    plt.title('PMT 3')
+    plt.subplot(224)
+    plt.plot(pmts_signal['time'], pmts_signal['pmt4'], 'k')
+    plt.grid()
+    plt.ylabel("Amplitude")
+    plt.xlabel("Time")
+    plt.title('PMT 4')
+    plt.savefig('png/pmt_sim.png')
 
+    return None
+
+def save_pmt_waveforms_to_root():
+    return None
+
+
+def print_cmos_imgage(total):
+    plt.figure(figsize=(20, 10))
+    plt.axis('off')
+    plt.imshow(total, cmap='viridis', origin='lower')  # Set origin parameter to 'lower'
+    plt.savefig('png/array_image.png', dpi=300,
+                bbox_inches='tight', pad_inches=0)
+    return None
 
 def AddBckg(options, i):
     bckg_array = np.zeros((options.x_pix, options.y_pix))
@@ -330,6 +338,8 @@ if __name__ == "__main__":
     a = opt.camera_aperture
     omega = 1./math.pow((4*(demag+1)*a), 2)   # solid angle ratio
     # print(omega)
+
+    drift_vel = compute_drift_velocity(opt.drift_field, gas_mixture="HeCF4_60_40")  # value of E in kV/cm, value of drift_vel in cm/microsec
 
 #### CODE EXECUTION ####
     run_count = 1
@@ -531,9 +541,14 @@ if __name__ == "__main__":
                             normed=None, weights=None, density=None)
 
                         # apply saturation vectorized function
-                        result_GEM3 = Nph_saturation_vectorized(
+                        _ , result_GEM3, ph_pmt = Nph_saturation_vectorized(
                             histo_cloud, edge, opt)
-                        array2d_Nph = result_GEM3[1]
+
+                        # PMT simulation
+                        pmt_waveforms = simulate_pmt_waveforms(ph_pmt, edge)
+
+
+                        array2d_Nph = result_GEM3
                         tot_ph_G3 = np.sum(array2d_Nph)
 
                         # x_n_bin2=round_up_to_even((xmax-xmin)/xbin_dim)
@@ -600,15 +615,13 @@ if __name__ == "__main__":
 
                 final_image = rt.TH2I('pic_run'+str(run_count)+'_ev'+str(entry), '', opt.x_pix,
                                       0, opt.x_pix-1, opt.y_pix, 0, opt.y_pix-1)  # smeared track with background
-                final_image = rn.array2hist(total, final_image)
-                if opt.print_png == True:
-                    # print cmos image
-                    array_normalized = total.T / np.max(total)
-                    plt.axis('off')
-                    plt.imshow(array_normalized, cmap='gray', origin='lower')  # Set origin parameter to 'lower'
-                    plt.savefig('array_image.png', dpi=300,
-                                bbox_inches='tight', pad_inches=0)
-                    # and print pmt waveforms
+                #final_image = rn.array2hist(total, final_image)
+
+                if opt.print_png != -1:
+                    if entry == opt.print_png:
+                        os.system("mkdir -p png")
+                        print_cmos_imgage(total)
+                        print_waveforms_to_png(pmt_waveforms)
 
                 outfile.cd()
                 final_image.Write()

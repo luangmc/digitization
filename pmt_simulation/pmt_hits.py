@@ -14,7 +14,7 @@ class PhotonPropagation:
         self.params = self.read_params()
 
     def read_params(self):
-        with open('simulation_params.json', 'r') as file:
+        with open('pmt_simulation/simulation_params.json', 'r') as file:
             params = json.load(file)
         return params
 
@@ -100,7 +100,7 @@ class PhotonPropagation:
     def pmt_hits(self):
         hits = {}
         for i in range(len(self.x0)):
-            if i % 50 == 0:
+            if i % 500 == 0:
                 print("Voxel n. ", i)
             hits['cluster_{}'.format(i)] = self.sim_pmt_hits_with_map(self.x0[i],
                                                                       self.y0[i],
