@@ -167,12 +167,12 @@ def Nph_saturation_vectorized(histo_cloud, edges, options):
 
     return Nph_tot, Nph_array, ph_pmt
 
-def simulate_pmt_waveforms(ph_pmt, edges):
+def simulate_pmt_waveforms(ph_pmt, edges, options):
 
     nonzero_bins = np.nonzero(ph_pmt)
 
-    x0 = np.rint(edges[0][nonzero_bins[0]]+346/2).astype(int)
-    y0 = np.rint(edges[1][nonzero_bins[1]]+346/2).astype(int)
+    x0 = np.rint(edges[0][nonzero_bins[0]]+options.x_dim/2).astype(int)
+    y0 = np.rint(edges[1][nonzero_bins[1]]+options.y_dim/2).astype(int)
     # time in nanoseconds 
     arr_times = 1000 * \
         np.rint(edges[2][nonzero_bins[2]]/10/drift_vel).astype(int)
@@ -545,7 +545,7 @@ if __name__ == "__main__":
                             histo_cloud, edge, opt)
 
                         # PMT simulation
-                        pmt_waveforms = simulate_pmt_waveforms(ph_pmt, edge)
+                        pmt_waveforms = simulate_pmt_waveforms(ph_pmt, edge, opt)
 
 
                         array2d_Nph = result_GEM3
