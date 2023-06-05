@@ -224,7 +224,7 @@ def save_pmt_waveforms_to_root():
     return None
 
 
-def print_cmos_imgage(total):
+def print_cmos_image(total):
     plt.figure(figsize=(20, 10))
     plt.axis('off')
     plt.imshow(total, cmap='viridis', origin='lower')  # Set origin parameter to 'lower'
@@ -620,7 +620,7 @@ if __name__ == "__main__":
                 if opt.print_png != -1:
                     if entry == opt.print_png:
                         os.system("mkdir -p png")
-                        print_cmos_imgage(total)
+                        print_cmos_image(total)
                         print_waveforms_to_png(pmt_waveforms)
 
                 outfile.cd()
