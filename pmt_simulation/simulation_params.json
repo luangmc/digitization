@@ -5,7 +5,7 @@
  "dist_gem_pmt": 134,
  "pmt_radius": 11,
  "window_len": 1024,
- "quantum_efficiency": 0.05,
+ "quantum_efficiency": 0.26,
  "pmt_time_response": {"transit_time": 17,
                        "transit_time_spread": 0.9},
 "pmt_signal": {"amplitude": -0.00296,
