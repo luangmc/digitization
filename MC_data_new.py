@@ -173,10 +173,13 @@ def simulate_pmt_waveforms(ph_pmt, edges, options):
 
     x0 = np.rint(edges[0][nonzero_bins[0]]+options.x_dim/2).astype(int)
     y0 = np.rint(edges[1][nonzero_bins[1]]+options.y_dim/2).astype(int)
-    # time in nanoseconds 
-    arr_times = 1000 * \
-        np.rint(edges[2][nonzero_bins[2]]/10/drift_vel).astype(int)
-    n_fotons = np.rint(ph_pmt[nonzero_bins]).astype(int)
+
+    # time in nanoseconds
+    arr_times =  (np.rint(edges[2][nonzero_bins[2]]))
+    Min = min(0,np.min(arr_times))
+    shifted_arr = arr_times - Min
+    arr_times_seq = shifted_arr * 1000 / 10 /drift_vel
+    arr_times = np.diff(arr_times_seq, prepend=0)
 
     print("n_fotons mean =", n_fotons.mean())
     print("n_cluster =", n_fotons.size)
