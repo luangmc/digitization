@@ -182,7 +182,7 @@ def simulate_pmt_waveforms(ph_pmt, edges, options):
     print("n_cluster =", n_fotons.size)
 
     ptc_object = PhotonPropagation(x0, y0, n_fotons, arr_times)
-    pmt_hits = ptc_object.pmt_hits()
+    pmt_hits = ptc_object.pmt_hits(0)
 
     ptc_simulation = SignalSimulation(pmt_hits)
     pmts_signal = ptc_simulation.simulated_signals()
