@@ -114,7 +114,9 @@ Work in progress
 
 Possible improvements to reduce resource usage
 ------------
++ simulate 'exposure time' effect (to cut long tracks or miss spots in higher and lower part of the sensor)
 + parallelize new saturation loop (speed up)
++ parallelize PMT simulation (one core per PMT)
 + reduce x-y dimension of single layer in saturation loop (save RAM, for oblique tracks)
 + use sparse object for saturation (at the moment the numpy object is taking memory for zeros)
 + use cython to compile code as C and define datatype (int16)
