@@ -16,10 +16,10 @@ class SignalSimulation:
             params = json.load(file)
         return params
 
-    def quantum_efficiency(self, nr_fotons):
+    def quantum_efficiency(self, nr_photons):
         probs = [1 - self.params['quantum_efficiency'],
                  self.params['quantum_efficiency']]
-        effc = np.random.choice(2, nr_fotons, p=probs)
+        effc = np.random.choice(2, nr_photons, p=probs)
         self.nr_hits = effc.sum()
 
     def set_t(self):
@@ -40,25 +40,27 @@ class SignalSimulation:
         return np.random.normal(mu, sigma, 1)
 
     def signal_time(self):
-        arr_time = [self.ptc_hits[t_cluster]['arrival_time']
-                     for t_cluster in self.ptc_hits.keys()]
+        arr_time = [self.ptc_hits[t_voxel]['arrival_time']
+                     for t_voxel in self.ptc_hits.keys()]
         return np.cumsum(arr_time)
 
-    def cluster_signal(self, arr_time):
+    def voxel_signal(self, arr_time):
         amp = self.params['pmt_signal']['amplitude']\
               + (np.random.uniform(-1,1) *
                  self.params['pmt_signal']['amplitude_dispersion'] *
                  self.params['pmt_signal']['amplitude'])
         std = self.params['pmt_signal']['sigma']
         sig = np.array([])
+        #mean = arr_time
         #mean = self.transit_time()[0] + arr_time
-        mean = self.transit_time()[0] + arr_time + exponnorm.rvs(1.6467712068624878, loc = 0, scale = 8.870899794351182, size=1)[0]
-        #mean = self.transit_time()[0] + arr_time + np.random.exponential(1/0.21)[0]
+        #mean = self.transit_time()[0] + arr_time + exponnorm.rvs(1.6467712068624878, loc = 0, scale = 8.870899794351182, size=1)[0]
+        #mean = self.transit_time()[0] + arr_time + np.random.exponential(1/0.21)
+        mean = arr_time + exponnorm.rvs(1.6467712068624878, loc = 0, scale = 8.870899794351182, size=1)[0]
         sig = self.gaussian(self.t, amp, mean, std)
         return sig
 
-    def gen_signal(self, nr_fotons, arr_time):
-        cl_sig = np.array([self.cluster_signal(arr_time) for _ in range(nr_fotons)])
+    def gen_signal(self, nr_photons, arr_time):
+        cl_sig = np.array([self.voxel_signal(arr_time) for _ in range(nr_photons)])
         self.recoil_signal = np.sum(cl_sig, axis=0)
 
     def noise_gen(self, CovarianceMatrix, size):
@@ -70,8 +72,8 @@ class SignalSimulation:
     def win_noise(self):
         self.noise = self.noise_gen(self.noise_covM, 4)
 
-    def pmt_signal(self, nr_fotons, arr_time):
-        self.quantum_efficiency(nr_fotons)
+    def pmt_signal(self, nr_photons, arr_time):
+        self.quantum_efficiency(nr_photons)
         self.gen_signal(self.nr_hits, arr_time)
         return self.recoil_signal
 
@@ -79,11 +81,11 @@ class SignalSimulation:
         pmts = ['pmt_1', 'pmt_2', 'pmt_3', 'pmt_4']
         signal = {key: np.zeros([self.params['window_len']]) for key in pmts}
         arrival_time = self.signal_time()
-        cluster_keys = list(self.ptc_hits.keys())
+        voxel_keys = list(self.ptc_hits.keys())
         for pmt in pmts:
             signal_aux = np.array([self.pmt_signal(self.ptc_hits[voxel][pmt],
                                                    arrival_time[i])
-                                   for i, voxel in enumerate(cluster_keys)],
+                                   for i, voxel in enumerate(voxel_keys)],
                                   dtype=object)
             signal[pmt] = np.sum(signal_aux, axis=0) + \
                           self.noise[pmts.index(pmt)]
