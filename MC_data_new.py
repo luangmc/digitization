@@ -171,24 +171,25 @@ def simulate_pmt_waveforms(ph_pmt, edges, options):
 
     nonzero_bins = np.nonzero(ph_pmt)
 
-    x0 = np.rint(edges[0][nonzero_bins[0]]+options.x_dim/2).astype(int)
-    y0 = np.rint(edges[1][nonzero_bins[1]]+options.y_dim/2).astype(int)
+    x_0 = edges[0][nonzero_bins[0]]+options.x_dim/2
+    y_0 = edges[1][nonzero_bins[1]]+options.y_dim/2
 
     # time in nanoseconds
-    arr_times =  (np.rint(edges[2][nonzero_bins[2]]))
+    arr_times = edges[2][nonzero_bins[2]]
     Min = min(0,np.min(arr_times))
     shifted_arr = arr_times - Min
     arr_times_seq = shifted_arr * 1000 / 10 /drift_vel
     arr_times = np.diff(arr_times_seq, prepend=0)
 
-    n_fotons = np.rint(ph_pmt[nonzero_bins]).astype(int)
+    n_photons = np.rint(ph_pmt[nonzero_bins]).astype(int)
 
-    ptc_object = PhotonPropagation(x0, y0, n_fotons, arr_times)
-    pmt_hits = ptc_object.pmt_hits(0)
-
+    ptc_object = PhotonPropagation(x_0, y_0, n_photons, arr_times)
+    pmt_hits = ptc_object.pmt_hits(0) # 0: Use equation R^n
+                                      # 1: Use photon by photon propagation
+                                      # 2: Use map
+    
     ptc_simulation = SignalSimulation(pmt_hits)
     pmts_signal = ptc_simulation.simulated_signals()
-
 
     return pmts_signal
 
