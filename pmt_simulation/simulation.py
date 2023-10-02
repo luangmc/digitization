@@ -51,11 +51,9 @@ class SignalSimulation:
                  self.params['pmt_signal']['amplitude'])
         std = self.params['pmt_signal']['sigma']
         sig = np.array([])
-        #mean = arr_time
         #mean = self.transit_time()[0] + arr_time
-        #mean = self.transit_time()[0] + arr_time + exponnorm.rvs(1.6467712068624878, loc = 0, scale = 8.870899794351182, size=1)[0]
-        #mean = self.transit_time()[0] + arr_time + np.random.exponential(1/0.21)
-        mean = arr_time + exponnorm.rvs(1.6467712068624878, loc = 0, scale = 8.870899794351182, size=1)[0]
+        #mean = arr_time + exponnorm.rvs(1.3706518601328221, loc = 0, scale = 10.211614243235386, size=1)[0] #Used before the Digitization-PMT integration
+        mean = self.transit_time()[0] + arr_time + np.random.exponential(1/0.21) #Apply exp. dispersion from LED database analysis
         sig = self.gaussian(self.t, amp, mean, std)
         return sig
 
