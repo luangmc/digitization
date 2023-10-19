@@ -36,14 +36,12 @@ def NelGM1_vectorized(N_ioniz_el):
 
 
 def NelGEM2_vectorized(energyDep, z_hit, options):
-    n_ioniz_el = energyDep / options.ion_pot
+    n_ioniz_el_mean = energyDep / options.ion_pot
+    n_ioniz_el = poisson(n_ioniz_el_mean).rvs()
     drift_l = np.abs(z_hit - options.z_gem)
-    n_ioniz_el_mean = np.abs(n_ioniz_el * np.exp(-drift_l / options.absorption_l))
-    poisson_distr = lambda x: poisson(x).rvs()
-    n_ioniz_el = poisson_distr(n_ioniz_el_mean)
-
-    # total number of secondary electrons considering the gain in the 2nd GEM foil
-    n_tot_el = NelGM1_vectorized(n_ioniz_el) * GEM2_gain * extraction_eff_GEM2
+    p_survive = np.exp(-drift_l / options.absorption_l)
+    n_ioniz_el_after_abs = np.random.binomial(n_ioniz_el, p_survive)
+    n_tot_el = NelGM1_vectorized(n_ioniz_el_after_abs) * GEM2_gain * extraction_eff_GEM2
 
     return np.round(n_tot_el)
 
