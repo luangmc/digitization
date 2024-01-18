@@ -54,7 +54,7 @@ do
 		cp ConfigFile_AmBe.txt "$conf" 
 
 		# setting parameters in the current config file
-		sed -i 's/'\''z_gem'\'' *\t*: .*/'\'z_gem\'\ :\ 255.+$z_gem\.\,'/'  "$conf"
+                sed -i 's/'\''z_gem'\'' *\t*: .*/'\'z_gem\'\ :\ $z_gem\.\,'/'  "$conf" 
 		sed -i 's/'\''beta'\'' *\t*: .*/'\'beta\'\ :\ $beta\,'/'  "$conf"
 		sed -i 's/'\''ion_pot'\'' *\t*: .*/'\'ion_pot\'\ :\ $ion_pot\,'/'  "$conf"
 		sed -i 's/'\''camera_aperture'\'' *\t*: .*/'\'camera_aperture\'\ :\ $camera_aperture\,'/'  "$conf"
