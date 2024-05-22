@@ -51,9 +51,7 @@ class SignalSimulation:
                  self.params['pmt_signal']['amplitude'])
         std = self.params['pmt_signal']['sigma']
         sig = np.array([])
-        #mean = self.transit_time()[0] + arr_time
-        #mean = arr_time + exponnorm.rvs(1.3706518601328221, loc = 0, scale = 10.211614243235386, size=1)[0] #Used before the Digitization-PMT integration
-        mean = self.transit_time()[0] + arr_time + np.random.exponential(1/0.21) #Apply exp. dispersion from LED database analysis
+        mean = self.transit_time()[0] + arr_time
         sig = self.gaussian(self.t, amp, mean, std)
         return sig
 
@@ -71,8 +69,10 @@ class SignalSimulation:
         self.noise = self.noise_gen(self.noise_covM, 4)
 
     def pmt_signal(self, nr_photons, arr_time):
-        self.quantum_efficiency(nr_photons)
-        self.gen_signal(self.nr_hits, arr_time)
+        #self.quantum_efficiency(nr_photons)
+        #self.gen_signal(self.nr_hits, arr_time)
+        # The quantum efficiency is now applied together with glass transmission before simulating the pmt
+        self.gen_signal(self.nr_photons, arr_time)
         return self.recoil_signal
 
     def simulated_signals(self):
