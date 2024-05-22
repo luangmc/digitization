@@ -72,7 +72,7 @@ class PhotonPropagation:
         for pmt_name, pmt_pos in pmt_positions.items():
             x_pmt, y_pmt, z_pmt = pmt_pos['x'], pmt_pos['y'], self.params['dist_gem_pmt']
             r_pmt = self.params['pmt_radius']
-            n = 3.8
+            n = 3.9
             R = np.sqrt((x_pmt - x_0) ** 2 + (y_pmt - y_0) ** 2 + (z_pmt - self.z_0) ** 2)
             
             hits[pmt_name] = np.random.poisson(n_photons * (r_pmt ** 2) * (z_pmt ** 2) / (4 * (R ** n)))
