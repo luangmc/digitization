@@ -72,7 +72,7 @@ class SignalSimulation:
         #self.quantum_efficiency(nr_photons)
         #self.gen_signal(self.nr_hits, arr_time)
         # The quantum efficiency is now applied together with glass transmission before simulating the pmt
-        self.gen_signal(self.nr_photons, arr_time)
+        self.gen_signal(nr_photons, arr_time)
         return self.recoil_signal
 
     def simulated_signals(self):
