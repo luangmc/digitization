@@ -181,7 +181,8 @@ def simulate_pmt_waveforms(ph_pmt, edges, options):
     arr_times_seq = shifted_arr * 1000 / 10 /drift_vel
     arr_times = np.diff(arr_times_seq, prepend=0)
 
-    n_photons = np.rint(ph_pmt[nonzero_bins]).astype(int)
+    # 0.0136 - From Glass Transmission Spectrum + PMT QE Curve
+    n_photons = np.rint(0.0136 * ph_pmt[nonzero_bins]).astype(int)
 
     ptc_object = PhotonPropagation(x_0, y_0, n_photons, arr_times)
     pmt_hits = ptc_object.pmt_hits(0) # 0: Use equation R^n
