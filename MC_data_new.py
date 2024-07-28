@@ -175,50 +175,53 @@ def simulate_pmt_waveforms(ph_pmt, edges, options):
     y_0 = edges[1][nonzero_bins[1]]+options.y_dim/2
 
     # time in nanoseconds
-    arr_times = edges[2][nonzero_bins[2]]
+    arr_times = edges[2][nonzero_bins[2]]   
     Min = min(0,np.min(arr_times))
     shifted_arr = arr_times - Min
     arr_times_seq = shifted_arr * 1000 / 10 /drift_vel
+    arr_times = arr_times_seq
     arr_times = np.diff(arr_times_seq, prepend=0)
-
-    # 0.0136 - From Glass Transmission Spectrum + PMT QE Curve
-    n_photons = np.rint(0.0136 * ph_pmt[nonzero_bins]).astype(int)
-
+    
+    n_photons = np.rint(0.0136 * ph_pmt[nonzero_bins]).astype(int) # 0.0136 - From Glass Transmission Spectrum + PMT QE Curve
+    
+    print("Starting PMT Simulation")
     ptc_object = PhotonPropagation(x_0, y_0, n_photons, arr_times)
     pmt_hits = ptc_object.pmt_hits(0) # 0: Use equation R^n
                                       # 1: Use photon by photon propagation
                                       # 2: Use map
+    t0 = time.time()
+      
+    ptc_simulation = SignalSimulation(hits_dict = pmt_hits) 
+    fast_pmt_waveforms, slow_pmt_waveforms = ptc_simulation.simulated_signals()
     
-    ptc_simulation = SignalSimulation(pmt_hits)
-    pmts_signal = ptc_simulation.simulated_signals()
-
-    return pmts_signal
+    print("PMT Simulation took %.1f seconds"%(time.time()-t0))
+    return fast_pmt_waveforms, slow_pmt_waveforms
 
 def print_waveforms_to_png(pmts_signal):
     plt.figure(figsize=(20, 10))
     plt.subplot(221)
     plt.plot(pmts_signal['time'], pmts_signal['pmt_1'], 'k')
     plt.grid()
-    plt.ylabel("Amplitude")
-    plt.xlabel("Time")
+    plt.ylabel("Amplitude (V)")
+    plt.xlabel("Time (ns)")
     plt.title('PMT 1')
     plt.subplot(222)
     plt.plot(pmts_signal['time'], pmts_signal['pmt_2'], 'k')
     plt.grid()
-    plt.ylabel("Amplitude")
-    plt.xlabel("Time")
+    plt.ylabel("Amplitude (V)")
+    plt.xlabel("Time (ns)")
     plt.title('PMT 2')
     plt.subplot(223)
     plt.plot(pmts_signal['time'], pmts_signal['pmt_3'], 'k')
     plt.grid()
-    plt.ylabel("Amplitude")
-    plt.xlabel("Time")
+    plt.ylabel("Amplitude (V)")
+    plt.xlabel("Time (ns)")
     plt.title('PMT 3')
     plt.subplot(224)
     plt.plot(pmts_signal['time'], pmts_signal['pmt_4'], 'k')
     plt.grid()
-    plt.ylabel("Amplitude")
-    plt.xlabel("Time")
+    plt.ylabel("Amplitude (V)")
+    plt.xlabel("Time (ns)")
     plt.title('PMT 4')
     plt.savefig('png/pmt_sim.png')
 
@@ -227,11 +230,10 @@ def print_waveforms_to_png(pmts_signal):
 def save_pmt_waveforms_to_root():
     return None
 
-
 def print_cmos_image(total):
     plt.figure(figsize=(20, 10))
     plt.axis('off')
-    plt.imshow(total, cmap='viridis', origin='lower')  # Set origin parameter to 'lower'
+    plt.imshow(total, cmap='gray', origin='lower')  # Set origin parameter to 'lower'
     plt.savefig('png/array_image.png', dpi=300,
                 bbox_inches='tight', pad_inches=0)
     return None
@@ -445,11 +447,11 @@ if __name__ == "__main__":
             for entry in range(0, totev):  # RUNNING ON ENTRIES
                 tree.GetEntry(entry)
 
-                y_hits_tr = np.array(tree.y_hits)+100
-                z_hits_tr = np.array(tree.z_hits)+100
+                y_hits_tr = np.array(tree.y_hits) + 0
+                z_hits_tr = np.array(tree.z_hits) + 0
 
                 # add random Z to tracks
-                x_hits_tr = tree.x_hits
+                x_hits_tr = np.array(tree.x_hits) - 151
                 if opt.randZ_range:
                     rand = (random.random()-0.5)*(opt.randZ_range)
                     for ihit in range(0, tree.numhits):
@@ -549,7 +551,7 @@ if __name__ == "__main__":
                             histo_cloud, edge, opt)
 
                         # PMT simulation
-                        pmt_waveforms = simulate_pmt_waveforms(ph_pmt, edge, opt)
+                        fast_pmt_waveforms, slow_pmt_waveforms = simulate_pmt_waveforms(ph_pmt, edge, opt)
 
 
                         array2d_Nph = result_GEM3
@@ -625,7 +627,8 @@ if __name__ == "__main__":
                     if entry == opt.print_png:
                         os.system("mkdir -p png")
                         print_cmos_image(total)
-                        print_waveforms_to_png(pmt_waveforms)
+                        print_waveforms_to_png(fast_pmt_waveforms)
+                        print_waveforms_to_png(slow_pmt_waveforms)
 
                 outfile.cd()
                 final_image.Write()

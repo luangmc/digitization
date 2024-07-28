@@ -72,7 +72,7 @@ class PhotonPropagation:
         for pmt_name, pmt_pos in pmt_positions.items():
             x_pmt, y_pmt, z_pmt = pmt_pos['x'], pmt_pos['y'], self.params['dist_gem_pmt']
             r_pmt = self.params['pmt_radius']
-            n = 3.9
+            n = 4
             R = np.sqrt((x_pmt - x_0) ** 2 + (y_pmt - y_0) ** 2 + (z_pmt - self.z_0) ** 2)
             
             hits[pmt_name] = np.random.poisson(n_photons * (r_pmt ** 2) * (z_pmt ** 2) / (4 * (R ** n)))
@@ -85,7 +85,7 @@ class PhotonPropagation:
         #Mode = 2: Use map
         
         hits = {}
-
+        
         for i, (x, y, p, t) in enumerate(zip(self.x_0, self.y_0, self.n_photons, self.arr_times)):
             voxel_name = 'voxel_{}'.format(i)
             if   (mode==0):
